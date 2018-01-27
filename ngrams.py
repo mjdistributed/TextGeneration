@@ -1,12 +1,13 @@
 import string
 from collections import Counter, defaultdict
+import numpy as np
 from pandas import DataFrame
 import operator
 
-import sys  
+import sys
 
 # necessary to handle unicode while reading text file
-reload(sys)  
+reload(sys)
 sys.setdefaultencoding('utf8')
 
 """ Definitions:
@@ -43,11 +44,16 @@ def get_probability_df(count_dict):
   df['probability'] = df['probability'] / sum(df['probability'])
   return df
 
-def transition_matrix(path, n):
+def get_transition_matrix(path, n):
   with open(path, 'r') as myfile:
     text = myfile.read()
     return transition_matrix_for_text(text, n)
   raise Exception("should never get here")
+
+def n_grams(path, n):
+  with open(path, 'r') as myfile:
+    text = myfile.read()
+    return n_grams_for_text(text, n)
 
 def n_grams_for_text(text, n):
   n_grams = get_ngram_counts(text, n)
@@ -70,20 +76,33 @@ def transition_matrix_for_text(text, n):
   return counts_to_probabilities(transition_matrix)
 
 def smooth_transitions(transition_matrix):
-  # to avoid getting 'stuck' in our walk, will need to smooth transition matrix such that each transition from 
+  # to avoid getting 'stuck' in our walk, will need to smooth transition matrix such that each transition from
   # every n-gram to every other token is possible, though unlikely
-  return None
+  raise Exception("not implemented yet")
 
 def random_walk(n_gram_probs, transition_matrix, num_steps):
   # choose a random starting point based on the likelihood of n-gram occurrence
+  curr_gram = "welcome to"
+
+  res_string = curr_gram
 
   # for each step, move to the next token based on the likelihood of transition, and update our current state
-  return None
+  for i in range(num_steps):
+    next_possibilities = transition_matrix[curr_gram].items()
+    next_keys = map(lambda x: x[0], next_possibilities)
+    next_weights = map(lambda x: x[1], next_possibilities)
+    choice = np.random.choice(next_keys, p=next_weights)
+    res_string += ' ' + choice
+    # TODO: Generalize '1' for n-grams
+    curr_gram = curr_gram.split(' ')[1] + ' ' + choice
+  return res_string
 
-test_text = 'hello i am hello i testing some stuff omg this is wild omg this is wild'
+# test_text = 'hello i am hello i testing some stuff omg this is wild omg this is wild'
 # probs = n_grams_for_text('hello i am testing some stuff omg this is wild omg this is wild', 2)
-# probs = n_grams('neuromancer.txt', 2)
+
 # probs.set_index('n-gram')
 # print(sorted(probs.to_dict(outtype='records'), key=lambda x: x['probability'], reverse=True)[:10])
 
-print(transition_matrix('neuromancer.txt', 2))
+probs = n_grams('neuromancer.txt', 2)
+transition_matrix = get_transition_matrix('neuromancer.txt', 2)
+print(random_walk(probs, transition_matrix, 50))
